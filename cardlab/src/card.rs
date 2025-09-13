@@ -44,7 +44,47 @@
 /// // Test equality between identical cards.
 /// assert!(ace_spades == Card::new("spade", 14));
 /// ```
-pub struct Card;
+enum Suit {
+    Club,
+    Diamond,
+    Heart,
+    Spade,
+}
+impl Suit {
+    fn priority(&self) -> u8 {
+        match self {
+            Suit::Diamond => 1,
+            Suit::Club => 2,
+            Suit::Heart => 3,
+            Suit::Spade => 4,
+        }
+    }
+}
+
+enum Rank {
+    Number(u8),
+    Ace,
+    Jack,
+    Queen,
+    King,
+}
+
+impl Rank {
+    fn value(&self) -> u8 {
+        match self {
+            Rank::Ace => 14,
+            Rank::Number(x) => *x,
+            Rank::Jack => 11,
+            Rank::Queen => 12,
+            Rank::King => 13,
+        }
+    }
+}
+
+pub struct Card {
+    suit: Suit,
+    rank: Rank,
+}
 
 impl Card {
     /// Creates a new Card instance from a suit name and numeric rank.
@@ -78,7 +118,25 @@ impl Card {
     /// let three_of_clubs = Card::new("club", 3);
     /// ```
     pub fn new(suit: &str, rank: u8) -> Self {
-        todo!("implement me once you've finished modeling `Card`!")
+        let suit_type = match suit {
+            "spade" => Suit::Spade,
+            "heart" => Suit::Heart,
+            "club" => Suit::Club,
+            "diamond" => Suit::Diamond,
+            _ => panic!("invalid suit!"),
+        };
+        let rank_type = match rank {
+            11 => Rank::Jack,
+            12 => Rank::Queen,
+            13 => Rank::King,
+            14 => Rank::Ace,
+            2..=10 => Rank::Number(rank),
+            _ => panic!("invalid rank!"),
+        };
+        Card {
+            suit: suit_type,
+            rank: rank_type,
+        }
     }
 
     /// Returns a string representation of this card's suit.
@@ -92,7 +150,12 @@ impl Card {
     /// assert_eq!(card.suit_name(), "club");
     /// ```
     pub fn suit_name(&self) -> &'static str {
-        todo!("implement me once you've finished modeling `Card`!")
+        match self.suit {
+            Suit::Club => "club",
+            Suit::Spade => "spade",
+            Suit::Heart => "heart",
+            Suit::Diamond => "diamond",
+        }
     }
 
     /// Returns the numeric rank of this card, where number cards = 2-10, and Jack = 11, Queen = 12,
@@ -107,7 +170,7 @@ impl Card {
     /// assert_eq!(card.rank_value(), 3);
     /// ```
     pub fn rank_value(&self) -> u8 {
-        todo!("implement me once you've finished modeling `Card`!")
+        self.rank.value()
     }
 }
 
@@ -115,7 +178,7 @@ impl Card {
 /// the same suit and rank.
 impl PartialEq for Card {
     fn eq(&self, other: &Self) -> bool {
-        todo!("implement me once you've finished modeling `Card`!")
+        (self.rank_value() == other.rank_value()) && (self.suit_name() == other.suit_name())
     }
 }
 
@@ -131,7 +194,10 @@ impl Eq for Card {}
 /// (Diamond < Club < Heart < Spade) if ranks are equal.
 impl Ord for Card {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        todo!("implement me once you've finished modeling `Card`!")
+        match self.rank_value().cmp(&other.rank_value()) {
+            std::cmp::Ordering::Equal => self.suit.priority().cmp(&other.suit.priority()),
+            x => x,
+        }
     }
 }
 
