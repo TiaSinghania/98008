@@ -1,5 +1,8 @@
 use crate::{Reader, Summary};
-use std::io;
+use std::{
+    io::Error,
+    io::{self, ErrorKind},
+};
 
 /// A struct that represents an email message.
 ///
@@ -38,7 +41,10 @@ use std::io;
 /// [`summarize`](Summary::summarize), and [`get_info`](Summary::get_info) methods.
 #[derive(Debug)]
 pub struct EmailReader {
-    _replace_me: (),
+    subject: String,
+    sender: String,
+    receiver: String,
+    message: String,
 }
 
 impl Reader for EmailReader {
@@ -71,25 +77,61 @@ impl Reader for EmailReader {
     /// See [`std::io::Error::new`] for more details on how to do this.
     fn parse(file_str: String) -> Result<EmailReader, io::Error> {
         // lines is a vector of all the newline-separated lines as &str from the file_str
+        println!("{}", file_str);
         let lines: Vec<&str> = file_str.lines().collect();
-
-        todo!()
+        let invalid_err = Error::new(ErrorKind::InvalidData, "File is not in the correct format");
+        if lines.len() < 3 {
+            return Err(invalid_err);
+        }
+        match lines[0].trim_end().strip_prefix("Subject: ") {
+            Some(subject) => match lines[1].trim_end().strip_prefix("From: ") {
+                Some(sender) => match lines[2].trim_end().strip_prefix("To: ") {
+                    Some(receiver) => {
+                        let message = {
+                            if lines.len() > 3 {
+                                lines[3..]
+                                    .iter()
+                                    .map(|l| l.trim_end())
+                                    .collect::<Vec<_>>()
+                                    .join("\n")
+                            } else {
+                                "".to_string()
+                            }
+                        };
+                        Ok(EmailReader {
+                            subject: subject.to_string(),
+                            sender: sender.to_string(),
+                            receiver: receiver.to_string(),
+                            message,
+                        })
+                    }
+                    None => Err(invalid_err),
+                },
+                None => Err(invalid_err),
+            },
+            None => Err(invalid_err),
+        }
     }
 }
 
 impl Summary for EmailReader {
     /// Returns the length of the message in the email (not the full email).
     fn msg_len(&self) -> usize {
-        todo!()
+        self.message.len()
     }
 
     /// Returns a [`String`] of the form `"{sender}: {message}"`. Maximum 280 characters (truncate).
     fn summarize(&self) -> String {
-        todo!()
+        let mut res = format!("{}: {}", self.sender, self.message);
+        res.truncate(280);
+        res
     }
 
     /// Returns a [`String`] of the form `"{subject}\nFrom: {sender}, To: {receiver}"`.
     fn get_info(&self) -> String {
-        todo!()
+        format!(
+            "{}\nFrom: {}, To: {}",
+            self.subject, self.sender, self.receiver
+        )
     }
 }
